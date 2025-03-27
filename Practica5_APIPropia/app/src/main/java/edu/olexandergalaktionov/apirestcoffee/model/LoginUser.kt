@@ -1,7 +1,11 @@
 package edu.olexandergalaktionov.apirestcoffee.model
 
 import com.google.gson.annotations.SerializedName
-
+/**
+ * Class LoginState.kt
+ *
+ * Clase sellada que representa los estados de la petición de login.
+ */
 sealed class LoginState {
     object Idle : LoginState() // Estado inactivo (esperando acción del usuario)
     object Loading : LoginState() // Estado cargando (esperando respuesta del servidor)
