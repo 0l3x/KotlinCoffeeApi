@@ -1,5 +1,6 @@
 package edu.olexandergalaktionov.apirestcoffee
 
+import android.util.Log
 import edu.olexandergalaktionov.apirestcoffee.data.RemoteDataSource
 import edu.olexandergalaktionov.apirestcoffee.data.Retrofit2Api
 import edu.olexandergalaktionov.apirestcoffee.model.CoffeeList
@@ -33,6 +34,7 @@ class CoffeeRepository(private val sessionManager: SessionManager){
     suspend fun getAllCoffees(): List<CoffeeList> {
         val token = sessionManager.sessionFlow.first().first
             ?: throw Exception("Token no disponible")
+        Log.d(TAG, "Token usado: $token")
         return remoteDataSource.getCoffee(token)
     }
 

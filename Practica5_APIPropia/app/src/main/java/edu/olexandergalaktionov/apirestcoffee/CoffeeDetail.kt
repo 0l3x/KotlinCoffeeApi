@@ -43,20 +43,33 @@ class CoffeeDetail : AppCompatActivity() {
             val view = layoutInflater.inflate(R.layout.dialog_add_comment, null)
             val etComment = view.findViewById<EditText>(R.id.etComment)
 
-            AlertDialog.Builder(this)
+            val dialog = AlertDialog.Builder(this)
                 .setTitle("Nuevo comentario")
                 .setView(view)
-                .setPositiveButton("Publicar") { _, _ ->
-                    lifecycleScope.launch {
-                        val sessionManager = SessionManager(dataStore)
-                        val user = sessionManager.sessionFlow.first().second ?: "anon"
-                        val comment = etComment.text.toString()
-                        postComment(user, comment)
+                .setPositiveButton("Publicar", null) // <- Ojo, null para sobreescribir luego
+                .setNegativeButton("Cancelar", null)
+                .create()
+
+            dialog.setOnShowListener {
+                dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+                    val comment = etComment.text.toString().trim()
+
+                    if (comment.isBlank()) {
+                        Toast.makeText(this, "El comentario no puede estar vacío", Toast.LENGTH_SHORT).show()
+                    } else {
+                        lifecycleScope.launch {
+                            val sessionManager = SessionManager(dataStore)
+                            val user = sessionManager.sessionFlow.first().second ?: "anon"
+                            postComment(user, comment)
+                        }
+                        dialog.dismiss()
                     }
                 }
-                .setNegativeButton("Cancelar", null)
-                .show()
+            }
+
+            dialog.show()
         }
+
 
         coffeeId = intent.getIntExtra("coffeeId", -1)
         if (coffeeId == -1) {
@@ -93,12 +106,13 @@ class CoffeeDetail : AppCompatActivity() {
                 try {
                     val newComment = CoffeeComments(id = 0, idCoffee = coffeeId, user = user, comment = comment)
                     val response = Retrofit2Api.getRetrofit2Api().postComment("Bearer $token", newComment)
+                    Log.d("POST_COMMENT", "Code: ${response.code()}, Body: ${response.body()}, Error: ${response.errorBody()?.string()}")
                     if (response.isSuccessful) {
                         Toast.makeText(this@CoffeeDetail, "Comentario publicado", Toast.LENGTH_SHORT).show()
                         loadComments() // <-- actualiza comentarios
                         Log.d("POST_COMMENT", "Response: ${response.code()} - ${response.body()}")
                     } else {
-                        Toast.makeText(this@CoffeeDetail, "Error al publicar", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(this@CoffeeDetail, "Error: ${response.code()} - ${response.message()}", Toast.LENGTH_SHORT).show()
                     }
                 } catch (e: Exception) {
                     Toast.makeText(this@CoffeeDetail, "Error: ${e.message}", Toast.LENGTH_SHORT).show()

@@ -47,6 +47,16 @@ class MainActivity : AppCompatActivity() {
             insets
         }
 
+        // Verifica automáticamente si hay sesión activa al iniciar
+        lifecycleScope.launch {
+            val token = SessionManager(dataStore).sessionFlow.first().first
+            if (token == null) {
+                showLoginDialog()
+            } else {
+                loadCoffees()
+            }
+        }
+
         lifecycleScope.launch {
             vm.loginState.collect { state ->
                 when (state) {
@@ -67,22 +77,26 @@ class MainActivity : AppCompatActivity() {
 
         lifecycleScope.launch {
             vm.getSessionFlow().collect { (token, username) ->
-                if (token != null) {
-                    Log.i("SESSION", "Usuario autenticado: $username")
-                } else {
-                    Log.i("SESSION", "No hay usuario autenticado")
-                }
+                Log.i("SESSION", if (token != null) "Usuario autenticado: $username" else "No hay usuario autenticado")
             }
         }
 
         binding.recyclerView.layoutManager = LinearLayoutManager(this)
-        binding.recyclerView.adapter = CoffeeAdapter(emptyList()) { } //
+        binding.recyclerView.adapter = CoffeeAdapter(emptyList()) { }
 
         binding.swipeRefresh.setOnRefreshListener {
-            loadCoffees()
+            lifecycleScope.launch {
+                val token = SessionManager(dataStore).sessionFlow.first().first
+                if (token == null) {
+                    binding.swipeRefresh.isRefreshing = false
+                    Toast.makeText(this@MainActivity, "No has iniciado sesión", Toast.LENGTH_SHORT).show()
+                    showLoginDialog()
+                } else {
+                    loadCoffees()
+                }
+            }
         }
 
-        // Toolbar menú
         binding.mToolbar.inflateMenu(R.menu.main_menu)
         updateToolbarMenu()
 
@@ -107,26 +121,23 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        // Acción del icono de navegación ("Acerca de")
         binding.mToolbar.setNavigationOnClickListener {
             AlertDialog.Builder(this)
                 .setTitle("Acerca de")
-                .setMessage(""" 
-                            Autor: Olexander Galaktionov Tsisar
-                            Grupo: 2º DAM/DAW
-                            Asignatura: PMDM
-                            Práctica: API REST Coffee
-                            """.trimIndent())
+                .setMessage("""
+                    Autor: Olexandr Galaktionov Tsisar
+                    Grupo: 2º DAM/DAW
+                    Asignatura: PMDM
+                    Práctica: API REST Coffee
+                """.trimIndent())
                 .setPositiveButton("Aceptar", null)
                 .show()
         }
-
     }
 
     private fun updateToolbarMenu() {
         lifecycleScope.launch {
             val (token, _) = SessionManager(dataStore).sessionFlow.first()
-
             val menu = binding.mToolbar.menu
             menu.findItem(R.id.action_login)?.isVisible = token == null
             menu.findItem(R.id.action_logout)?.isVisible = token != null
@@ -135,7 +146,9 @@ class MainActivity : AppCompatActivity() {
 
     private fun loadCoffees() {
         lifecycleScope.launch {
-            val token = SessionManager(dataStore).sessionFlow.first().first
+            val sessionManager = SessionManager(dataStore)
+            val token = sessionManager.sessionFlow.first().first
+
             if (token == null) {
                 clearCoffees()
                 return@launch
@@ -143,8 +156,12 @@ class MainActivity : AppCompatActivity() {
 
             binding.swipeRefresh.isRefreshing = true
 
-            viewModel.fetchCoffees()
-            viewModel.coffeeList.collectLatest { coffeeList ->
+            try {
+                // Disparar fetchCoffees pero NO hacer collect aquí
+                viewModel.fetchCoffees()
+
+                // Recolectar UNA VEZ y cancelar automáticamente
+                val coffeeList = viewModel.coffeeList.first() // <-- cambia esto
                 coffeeList?.let {
                     val adapter = CoffeeAdapter(it) { selectedCoffee ->
                         val intent = Intent(this@MainActivity, CoffeeDetail::class.java)
@@ -154,6 +171,20 @@ class MainActivity : AppCompatActivity() {
                     binding.recyclerView.adapter = adapter
                     binding.tvEmpty.visibility = View.GONE
                 }
+
+            } catch (e: retrofit2.HttpException) {
+                Log.e("MainActivity", "Error al obtener los cafés: ${e.code()} - ${e.message()}")
+                if (e.code() == 401) {
+                    sessionManager.clearSession()
+                    vm.logout()
+                    updateToolbarMenu()
+                    clearCoffees()
+                    Toast.makeText(this@MainActivity, "Sesión expirada. Por favor, inicia sesión de nuevo.", Toast.LENGTH_LONG).show()
+                }
+            } catch (e: Exception) {
+                Log.e("MainActivity", "Error inesperado: ${e.message}")
+                Toast.makeText(this@MainActivity, "Error inesperado al obtener cafés", Toast.LENGTH_SHORT).show()
+            } finally {
                 binding.swipeRefresh.isRefreshing = false
             }
         }
@@ -182,3 +213,4 @@ class MainActivity : AppCompatActivity() {
             .show()
     }
 }
+
