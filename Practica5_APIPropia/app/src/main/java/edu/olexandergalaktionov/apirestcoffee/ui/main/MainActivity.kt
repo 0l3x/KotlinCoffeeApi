@@ -38,6 +38,7 @@ import kotlinx.coroutines.launch
  */
 class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
+    private lateinit var coffeeAdapter: CoffeeAdapter
 
     private val viewModel: CoffeeViewModel by viewModels {
         CoffeeViewModelFactory(CoffeeRepository(SessionManager(dataStore)))
@@ -46,7 +47,6 @@ class MainActivity : AppCompatActivity() {
     private val vm: MainViewModel by viewModels {
         MainViewModelFactory(CoffeeRepository(SessionManager(dataStore)))
     }
-
 
     /**
      * Called every time the activity becomes visible.
@@ -106,8 +106,13 @@ class MainActivity : AppCompatActivity() {
         }
 
         // RecyclerView setup
+        coffeeAdapter = CoffeeAdapter { selectedCoffee ->
+            val intent = Intent(this@MainActivity, CoffeeDetailActivity::class.java)
+            intent.putExtra("coffeeId", selectedCoffee.id)
+            startActivity(intent)
+        }
         binding.recyclerView.layoutManager = LinearLayoutManager(this)
-        binding.recyclerView.adapter = CoffeeAdapter(emptyList()) { }
+        binding.recyclerView.adapter = coffeeAdapter
 
         // Swipe-to-refresh action
         binding.swipeRefresh.setOnRefreshListener {
@@ -204,12 +209,7 @@ class MainActivity : AppCompatActivity() {
                         if (coffeeList.isEmpty()) {
                             clearCoffees(getString(R.string.no_coffee))
                         } else {
-                            val adapter = CoffeeAdapter(coffeeList) { selectedCoffee ->
-                                val intent = Intent(this@MainActivity, CoffeeDetailActivity::class.java)
-                                intent.putExtra("coffeeId", selectedCoffee.id)
-                                startActivity(intent)
-                            }
-                            binding.recyclerView.adapter = adapter
+                            coffeeAdapter.submitList(coffeeList)
                             binding.tvEmpty.visibility = View.GONE
                         }
 
@@ -242,7 +242,7 @@ class MainActivity : AppCompatActivity() {
      * Clears the coffee list and displays a message.
      */
     private fun clearCoffees(message: String) {
-        binding.recyclerView.adapter = CoffeeAdapter(emptyList()) {}
+        coffeeAdapter.submitList(emptyList())
         binding.tvEmpty.visibility = View.VISIBLE
         binding.swipeRefresh.isRefreshing = false
         Toast.makeText(this, message, Toast.LENGTH_SHORT).show()

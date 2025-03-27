@@ -2,6 +2,8 @@ package edu.olexandergalaktionov.apirestcoffee.ui.main
 
 import android.view.LayoutInflater
 import android.view.ViewGroup
+import androidx.recyclerview.widget.DiffUtil
+import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import edu.olexandergalaktionov.apirestcoffee.databinding.ItemCoffeeBinding
 import edu.olexandergalaktionov.apirestcoffee.model.CoffeeList
@@ -9,19 +11,17 @@ import edu.olexandergalaktionov.apirestcoffee.model.CoffeeList
 /**
  * Class CoffeeAdapter.kt
  *
- * Adapter to display a list of coffees in a RecyclerView.
+ * Adapter to display a list of coffees in a RecyclerView using ListAdapter.
  * Each item displays the name and number of comments.
  * Clicking on an item triggers the detail screen.
  *
- * @param coffeeList List of CoffeeList objects to display.
  * @param onItemClick Callback function executed when an item is clicked.
  *
  * @author Olexandr Galaktionov Tsisar
  */
 class CoffeeAdapter(
-    private val coffeeList: List<CoffeeList>,
     private val onItemClick: (CoffeeList) -> Unit
-) : RecyclerView.Adapter<CoffeeAdapter.CoffeeViewHolder>() {
+) : ListAdapter<CoffeeList, CoffeeAdapter.CoffeeViewHolder>(CoffeeDiffCallback()) {
 
     /**
      * ViewHolder class for coffee items.
@@ -41,7 +41,6 @@ class CoffeeAdapter(
             binding.tvCoffeeName.text = coffee.coffeeName ?: "Sin nombre"
             binding.tvComments.text = "Comentarios: ${coffee.comments}"
 
-            // Evento de clic
             binding.root.setOnClickListener {
                 onItemClick(coffee)
             }
@@ -60,11 +59,19 @@ class CoffeeAdapter(
      * Binds coffee data to a ViewHolder.
      */
     override fun onBindViewHolder(holder: CoffeeViewHolder, position: Int) {
-        holder.bind(coffeeList[position], onItemClick)
+        holder.bind(getItem(position), onItemClick)
+    }
+}
+
+/**
+ * DiffUtil callback for CoffeeList to optimize list updates.
+ */
+class CoffeeDiffCallback : DiffUtil.ItemCallback<CoffeeList>() {
+    override fun areItemsTheSame(oldItem: CoffeeList, newItem: CoffeeList): Boolean {
+        return oldItem.id == newItem.id
     }
 
-    /**
-     * Returns the total number of coffee items.
-     */
-    override fun getItemCount(): Int = coffeeList.size
+    override fun areContentsTheSame(oldItem: CoffeeList, newItem: CoffeeList): Boolean {
+        return oldItem == newItem
+    }
 }
