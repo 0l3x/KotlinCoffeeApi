@@ -6,4 +6,9 @@
     <string name="coffee_description">Descripcion del cafe</string>
     <string name="usuario">Usuario</string>
     <string name="user_comment">Comentario del usuario</string>
+    <string name="login">Login</string>
+    <string name="logout">Logout</string>
+    <string name="username">Nombre de usuario</string>
+    <string name="password">Password</string>
+    <string name="acceso_sin_token">No hay cafés disponibles sin token</string>
 </resources>
