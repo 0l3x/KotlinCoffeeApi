@@ -33,7 +33,7 @@ import kotlinx.coroutines.launch
  * @author Olexandr Galaktionov Tsisar
  */
 class CoffeeDetailActivity : AppCompatActivity() {
-
+    private val commentAdapter = CommentAdapter()
     private lateinit var binding: ActivityCoffeeDetailBinding
     private var coffeeId = -1 // to prevent errors of coffeeId not being set
     private var token: String? = null
@@ -69,6 +69,8 @@ class CoffeeDetailActivity : AppCompatActivity() {
 
         // Set up RecyclerView for displaying comments
         binding.recyclerComments.layoutManager = LinearLayoutManager(this)
+
+        binding.recyclerComments.adapter = commentAdapter
 
         // Pull-to-refresh functionality
         binding.swipeRefresh.setOnRefreshListener {
@@ -113,7 +115,7 @@ class CoffeeDetailActivity : AppCompatActivity() {
 
         lifecycleScope.launch {
             viewModel.comments.collectLatest { comments ->
-                binding.recyclerComments.adapter = CommentAdapter(comments)
+                commentAdapter.submitList(comments)
             }
         }
 
