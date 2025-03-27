@@ -3,170 +3,184 @@ package edu.olexandergalaktionov.apirestcoffee.ui.coffeedetail
 import android.os.Build
 import android.os.Bundle
 import android.text.Html
-import android.util.Log
 import android.widget.EditText
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.viewModels
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
-import edu.olexandergalaktionov.apirestcoffee.data.Retrofit2Api
+import edu.olexandergalaktionov.apirestcoffee.R
+import edu.olexandergalaktionov.apirestcoffee.data.CoffeeRepository
 import edu.olexandergalaktionov.apirestcoffee.databinding.ActivityCoffeeDetailBinding
 import edu.olexandergalaktionov.apirestcoffee.model.CoffeeComments
 import edu.olexandergalaktionov.apirestcoffee.utils.SessionManager
+import edu.olexandergalaktionov.apirestcoffee.utils.checkConnection
 import edu.olexandergalaktionov.apirestcoffee.utils.dataStore
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import androidx.appcompat.app.AlertDialog
-import edu.olexandergalaktionov.apirestcoffee.R
-import edu.olexandergalaktionov.apirestcoffee.utils.checkConnection
 
+/**
+ * Class CoffeeDetailActivity.kt
+ *
+ * Activity to display detailed information of a selected coffee and its comments.
+ * Allows users to view details, refresh comments and add new comments.
+ *
+ * @author Olexandr Galaktionov Tsisar
+ */
 class CoffeeDetailActivity : AppCompatActivity() {
+
     private lateinit var binding: ActivityCoffeeDetailBinding
-    private var coffeeId = -1
+    private var coffeeId = -1 // to prevent errors of coffeeId not being set
     private var token: String? = null
 
+    // ViewModel with repository injected via SessionManager using dataStore
+    private val viewModel: CoffeeViewModel by viewModels {
+        CoffeeViewModelFactory(CoffeeRepository(SessionManager(dataStore)))
+    }
+
+    /**
+     * Called when the activity is starting.
+     * Sets up the view, loads coffee data and initializes observers.
+     */
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-
         binding = ActivityCoffeeDetailBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        // Apply window insets for full screen layout
         ViewCompat.setOnApplyWindowInsetsListener(binding.root) { v, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
             insets
         }
 
-        binding.btnAddComment.setOnClickListener {
-            val view = layoutInflater.inflate(R.layout.dialog_add_comment, null)
-            val etComment = view.findViewById<EditText>(R.id.etComment)
-
-            val dialog = AlertDialog.Builder(this)
-                .setTitle("Nuevo comentario")
-                .setView(view)
-                .setPositiveButton("Publicar", null) // <- Ojo, null para sobreescribir luego
-                .setNegativeButton("Cancelar", null)
-                .create()
-
-            dialog.setOnShowListener {
-                dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
-                    val comment = etComment.text.toString().trim()
-
-                    if (comment.isBlank()) {
-                        Toast.makeText(this, "El comentario no puede estar vacío", Toast.LENGTH_SHORT).show()
-                    } else {
-                        lifecycleScope.launch {
-                            val sessionManager = SessionManager(dataStore)
-                            val user = sessionManager.sessionFlow.first().second ?: "anon"
-                            postComment(user, comment)
-                        }
-                        dialog.dismiss()
-                    }
-                }
-            }
-
-            dialog.show()
-        }
-
-
+        // Get coffee ID from intent
         coffeeId = intent.getIntExtra("coffeeId", -1)
         if (coffeeId == -1) {
             finish()
-            return
+            return // if coffeeId is not set, finish the activity
         }
 
+        // Set up RecyclerView for displaying comments
         binding.recyclerComments.layoutManager = LinearLayoutManager(this)
 
+        // Pull-to-refresh functionality
+        binding.swipeRefresh.setOnRefreshListener {
+            token?.let { t -> viewModel.loadComments(t, coffeeId) }
+        }
+
+        // Set comment button logic
+        binding.btnAddComment.setOnClickListener { showAddCommentDialog() }
+
+        // Load session token and then load coffee data
         lifecycleScope.launch {
-            val sessionManager = SessionManager(dataStore)
-            token = sessionManager.sessionFlow.first().first
+            val session = SessionManager(dataStore).sessionFlow.first()
+            token = session.first
 
             if (token != null) {
-                loadCoffeeDetail()
-                loadComments()
+                viewModel.loadCoffeeDetail(token!!, coffeeId)
+                viewModel.loadComments(token!!, coffeeId)
             }
         }
 
-        binding.swipeRefresh.setOnRefreshListener {
-            lifecycleScope.launch {
-                loadComments()
-            }
-        }
+        // Observe changes in ViewModel and update UI
+        observeViewModel()
     }
 
-    private fun postComment(user: String, comment: String) {
-        if (!checkConnection(this@CoffeeDetailActivity)) {
-            Toast.makeText(this@CoffeeDetailActivity, "Sin conexión. No se pudo publicar el comentario.", Toast.LENGTH_SHORT).show()
-            return
+    /**
+     * Observes data from ViewModel and updates the UI.
+     */
+    private fun observeViewModel() {
+        lifecycleScope.launch {
+            viewModel.coffeeDetail.collectLatest { detail ->
+                detail?.let {
+                    binding.tvCoffeeName.text = it.coffeeName
+                    val htmlDesc = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                        Html.fromHtml(it.coffeeDesc, Html.FROM_HTML_MODE_COMPACT)
+                    } else {
+                        Html.fromHtml(it.coffeeDesc)
+                    }
+                    binding.tvCoffeeDesc.text = htmlDesc
+                }
+            }
         }
 
         lifecycleScope.launch {
-            val sessionManager = SessionManager(dataStore)
-            val token = sessionManager.sessionFlow.first().first
-            val coffeeId = intent.getIntExtra("coffeeId", -1)
+            viewModel.comments.collectLatest { comments ->
+                binding.recyclerComments.adapter = CommentAdapter(comments)
+            }
+        }
 
-            if (token != null && coffeeId != -1) {
-                try {
-                    val newComment = CoffeeComments(id = 0, idCoffee = coffeeId, user = user, comment = comment)
-                    val response = Retrofit2Api.getRetrofit2Api().postComment("Bearer $token", newComment)
-                    Log.d("POST_COMMENT", "Code: ${response.code()}, Body: ${response.body()}, Error: ${response.errorBody()?.string()}")
-                    if (response.isSuccessful) {
-                        Toast.makeText(this@CoffeeDetailActivity, "Comentario publicado", Toast.LENGTH_SHORT).show()
-                        loadComments() // <-- actualiza comentarios
-                        Log.d("POST_COMMENT", "Response: ${response.code()} - ${response.body()}")
-                    } else {
-                        Toast.makeText(this@CoffeeDetailActivity, "Error: ${response.code()} - ${response.message()}", Toast.LENGTH_SHORT).show()
-                    }
-                } catch (e: Exception) {
-                    Toast.makeText(this@CoffeeDetailActivity, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
+        lifecycleScope.launch {
+            viewModel.isRefreshing.collectLatest { refreshing ->
+                binding.swipeRefresh.isRefreshing = refreshing
+            }
+        }
+
+        lifecycleScope.launch {
+            viewModel.errorMessage.collectLatest { msg ->
+                msg?.let {
+                    Toast.makeText(this@CoffeeDetailActivity, it, Toast.LENGTH_SHORT).show()
                 }
             }
         }
     }
 
+    /**
+     * Opens a dialog for the user to write and publish a comment.
+     * Validates input and triggers postComment on ViewModel.
+     */
+    private fun showAddCommentDialog() {
+        val view = layoutInflater.inflate(R.layout.dialog_add_comment, null)
+        val etComment = view.findViewById<EditText>(R.id.etComment)
 
-    private suspend fun loadCoffeeDetail() {
-        try {
-            val response = Retrofit2Api.getRetrofit2Api().getCoffeeById("Bearer $token", coffeeId)
-            binding.tvCoffeeName.text = response.coffeeName
+        val dialog = AlertDialog.Builder(this)
+            .setTitle("Nuevo comentario")
+            .setView(view)
+            .setPositiveButton("Publicar", null)
+            .setNegativeButton("Cancelar", null)
+            .create()
 
-            val htmlDesc = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                Html.fromHtml(response.coffeeDesc, Html.FROM_HTML_MODE_COMPACT)
-            } else {
-                Html.fromHtml(response.coffeeDesc)
+        dialog.setOnShowListener {
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+                val commentText = etComment.text.toString().trim()
+
+                if (commentText.isBlank()) {
+                    Toast.makeText(this, "El comentario no puede estar vacío", Toast.LENGTH_SHORT).show()
+                } else {
+                    lifecycleScope.launch {
+                        if (!checkConnection(this@CoffeeDetailActivity)) {
+                            Toast.makeText(this@CoffeeDetailActivity, "Sin conexión", Toast.LENGTH_SHORT).show()
+                            return@launch
+                        }
+
+                        val user = SessionManager(dataStore).sessionFlow.first().second ?: "anonymous"
+                        val comment = CoffeeComments(0, coffeeId, user, commentText)
+
+                        token?.let { t ->
+                            viewModel.postComment(
+                                token = t,
+                                comment = comment,
+                                onSuccess = {
+                                    Toast.makeText(this@CoffeeDetailActivity, "Comentario publicado", Toast.LENGTH_SHORT).show()
+                                },
+                                onError = { msg ->
+                                    Toast.makeText(this@CoffeeDetailActivity, msg, Toast.LENGTH_SHORT).show()
+                                }
+                            )
+                        }
+                    }
+                    dialog.dismiss()
+                }
             }
-            binding.tvCoffeeDesc.text = htmlDesc
-
-        } catch (e: Exception) {
-            Log.e("DETAIL", "Error cargando detalle: ${e.message}")
-            binding.tvCoffeeDesc.text = "No se pudo cargar el detalle"
-        }
-    }
-
-    private suspend fun loadComments() {
-        binding.swipeRefresh.isRefreshing = true
-
-        if (!checkConnection(this)) {
-            Toast.makeText(this, "Sin conexión. No se pueden cargar comentarios nuevos.", Toast.LENGTH_LONG).show()
-            binding.swipeRefresh.isRefreshing = false
-            return
         }
 
-        try {
-            val commentList: List<CoffeeComments> =
-                Retrofit2Api.getRetrofit2Api().getComments("Bearer $token", coffeeId)
-
-            val commentAdapter = CommentAdapter(commentList)
-            binding.recyclerComments.adapter = commentAdapter
-
-        } catch (e: Exception) {
-            Log.e("DETAIL", "Error cargando comentarios: ${e.message}")
-        } finally {
-            binding.swipeRefresh.isRefreshing = false
-        }
+        dialog.show()
     }
 }
