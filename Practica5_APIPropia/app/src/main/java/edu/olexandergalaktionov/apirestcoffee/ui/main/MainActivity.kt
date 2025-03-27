@@ -55,7 +55,7 @@ class MainActivity : AppCompatActivity() {
             insets
         }
 
-        // Verifica automáticamente si hay sesión activa al iniciar
+        // Verifica automáticamente si hay sesión activa al iniciar la actividad
         lifecycleScope.launch {
             val token = SessionManager(dataStore).sessionFlow.first().first
             if (token == null) {
