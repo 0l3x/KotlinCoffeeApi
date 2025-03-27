@@ -7,6 +7,7 @@ import edu.olexandergalaktionov.apirestcoffee.model.LoginRequest
 import edu.olexandergalaktionov.apirestcoffee.model.LoginResponse
 import edu.olexandergalaktionov.apirestcoffee.utils.SessionManager
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 
 class CoffeeRepository(private val sessionManager: SessionManager){
     private val apiService = Retrofit2Api.getRetrofit2Api()
@@ -30,6 +31,9 @@ class CoffeeRepository(private val sessionManager: SessionManager){
      * Obtiene la lista de cafés desde la API.
      */
     suspend fun getAllCoffees(): List<CoffeeList> {
-        return remoteDataSource.getCoffee("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c3VhcmlvIjoib2dhbGFrdGlvbm92IiwiaWF0IjoxNzQyNDg0Mjc2LCJleHAiOjE3NDI0OTE0NzZ9.uTCJou3JyB5rlgfiQE4v9VbBdaLNGwnXbZe0spGlvU0")
+        val token = sessionManager.sessionFlow.first().first
+            ?: throw Exception("Token no disponible")
+        return remoteDataSource.getCoffee(token)
     }
+
 }

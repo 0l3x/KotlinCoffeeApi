@@ -14,6 +14,7 @@ import edu.olexandergalaktionov.apirestcoffee.utils.SessionManager
 import edu.olexandergalaktionov.apirestcoffee.utils.dataStore
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import androidx.recyclerview.widget.LinearLayoutManager
 
 class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
@@ -38,37 +39,37 @@ class MainActivity : AppCompatActivity() {
             insets
         }
 
+        // 1. Login automático (esto puede ser opcional)
         vm.login("ogalaktionov", "10755610")
 
-        // Observando el estado de autenticación
+        // 2. Observar el estado de login
         lifecycleScope.launch {
-            vm.loginState.collect {
-                when (it) {
+            vm.loginState.collect { state ->
+                when (state) {
                     is LoginState.Idle -> Log.i("LOGIN", "Idle")
                     is LoginState.Loading -> Log.i("LOGIN", "Loading")
                     is LoginState.Success -> {
-                        Log.i("LOGIN", "Success: ${it.response.token}")
+                        Log.i("LOGIN", "Success: ${state.response.token}")
+                        // Ya estamos logueados: ahora sí podemos obtener cafés
+                        viewModel.fetchCoffees()
                     }
-                    is LoginState.Error -> {
-                        Log.e("LOGIN", "Error: ${it.message}")
-                    }
+                    is LoginState.Error -> Log.e("LOGIN", "Error: ${state.message}")
                 }
             }
         }
 
-        // Obteniendo sesión guardada
+        // 3. Observar los datos de sesión (opcional)
         lifecycleScope.launch {
-            vm.getSessionFlow().collect {
-                if (it.first != null) {
-                    Log.i("SESSION", "Usuario autenticado: ${it.second}")
+            vm.getSessionFlow().collect { (token, username) ->
+                if (token != null) {
+                    Log.i("SESSION", "Usuario autenticado: $username")
                 } else {
                     Log.i("SESSION", "No hay usuario autenticado")
                 }
             }
         }
 
-
-
+        // 4. Observar cafés cargados desde ViewModel
         lifecycleScope.launchWhenStarted {
             viewModel.coffeeList.collectLatest { coffeeList ->
                 coffeeList?.let {
@@ -77,10 +78,18 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        // Llamar a la API para obtener cafés
-        viewModel.fetchCoffees()
+        // Inicializa el RecyclerView
+        binding.recyclerView.layoutManager = LinearLayoutManager(this)
 
-        // Logout
-        vm.logout()
+        lifecycleScope.launchWhenStarted {
+            viewModel.coffeeList.collectLatest { coffeeList ->
+                coffeeList?.let {
+                    val adapter = CoffeeAdapter(it)
+                    binding.recyclerView.adapter = adapter
+                    Log.d("MainActivity", "Cafés mostrados en UI: $it")
+                }
+            }
+        }
+
     }
 }

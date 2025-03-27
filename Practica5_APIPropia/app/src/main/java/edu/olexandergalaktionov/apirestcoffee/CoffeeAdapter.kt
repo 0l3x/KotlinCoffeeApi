@@ -12,7 +12,7 @@ class CoffeeAdapter(private val coffeeList: List<CoffeeList>) :
     class CoffeeViewHolder(private val binding: ItemCoffeeBinding) :
         RecyclerView.ViewHolder(binding.root) {
         fun bind(coffee: CoffeeList) {
-            binding.tvCoffeeName.text = coffee.coffeeName
+            binding.tvCoffeeName.text = coffee.coffeeName ?: "Sin nombre"
             binding.tvComments.text = "Comentarios: ${coffee.comments}"
         }
     }
@@ -26,5 +26,5 @@ class CoffeeAdapter(private val coffeeList: List<CoffeeList>) :
         holder.bind(coffeeList[position])
     }
 
-    override fun getItemCount() = coffeeList.size
+    override fun getItemCount(): Int = coffeeList.size
 }
