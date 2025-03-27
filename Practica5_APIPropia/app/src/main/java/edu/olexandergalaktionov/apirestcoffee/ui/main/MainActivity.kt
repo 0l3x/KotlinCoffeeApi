@@ -27,6 +27,15 @@ import edu.olexandergalaktionov.apirestcoffee.utils.dataStore
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
+/**
+ * Class MainActivity.kt
+ *
+ * Displays the main list of coffees and handles session login/logout.
+ * Loads data using ViewModel and updates the UI.
+ * Integrates swipe-to-refresh and a custom toolbar menu.
+ *
+ * @author Olexandr Galaktionov Tsisar
+ */
 class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
 
@@ -38,11 +47,18 @@ class MainActivity : AppCompatActivity() {
         MainViewModelFactory(CoffeeRepository(SessionManager(dataStore)))
     }
 
+
+    /**
+     * Called every time the activity becomes visible.
+     */
     override fun onStart() {
         super.onStart()
         loadCoffees()
     }
 
+    /**
+     * Initializes views, toolbar, listeners and session checks.
+     */
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -65,6 +81,7 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
+        // Observe login state and handle UI response
         lifecycleScope.launch {
             vm.loginState.collect { state ->
                 when (state) {
@@ -88,21 +105,17 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        lifecycleScope.launch {
-            vm.getSessionFlow().collect { (token, username) ->
-                Log.i("SESSION", if (token != null) "Usuario autenticado: $username" else "No hay usuario autenticado")
-            }
-        }
-
+        // RecyclerView setup
         binding.recyclerView.layoutManager = LinearLayoutManager(this)
         binding.recyclerView.adapter = CoffeeAdapter(emptyList()) { }
 
+        // Swipe-to-refresh action
         binding.swipeRefresh.setOnRefreshListener {
             lifecycleScope.launch {
                 val token = SessionManager(dataStore).sessionFlow.first().first
                 if (token == null) {
                     binding.swipeRefresh.isRefreshing = false
-                    Toast.makeText(this@MainActivity, "No has iniciado sesión", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@MainActivity, getString(R.string.not_logged), Toast.LENGTH_SHORT).show()
                     showLoginDialog()
                 } else {
                     loadCoffees()
@@ -110,6 +123,7 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
+        // Toolbar menu
         binding.mToolbar.inflateMenu(R.menu.main_menu)
         updateToolbarMenu()
 
@@ -125,7 +139,7 @@ class MainActivity : AppCompatActivity() {
                         SessionManager(dataStore).clearSession()
                         vm.logout()
                         updateToolbarMenu()
-                        clearCoffees("Sesión cerrada correctamente.")
+                        clearCoffees(getString(R.string.logout))
                     }
                     true
                 }
@@ -143,11 +157,14 @@ class MainActivity : AppCompatActivity() {
                     Asignatura: Programación Multimedia y Dispositivos Móviles
                     Práctica: API REST Coffee
                 """.trimIndent())
-                .setPositiveButton("Aceptar", null)
+                .setPositiveButton(getString(R.string.accept), null)
                 .show()
         }
     }
 
+    /**
+     * Updates the toolbar icons based on session state.
+     */
     private fun updateToolbarMenu() {
         lifecycleScope.launch {
             val (token, _) = SessionManager(dataStore).sessionFlow.first()
@@ -157,6 +174,9 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    /**
+     * Loads coffee list and handles session & connection checks.
+     */
     private fun loadCoffees() {
         lifecycleScope.launch {
 
@@ -164,7 +184,7 @@ class MainActivity : AppCompatActivity() {
 
             // COMPROBAR CONEXIÓN
             if (!checkConnection(this@MainActivity)) {
-                clearCoffees("Sin conexión a Internet. Verifica tu red.")
+                clearCoffees(getString(R.string.no_internet))
                 return@launch
             }
 
@@ -172,7 +192,7 @@ class MainActivity : AppCompatActivity() {
             val token = sessionManager.sessionFlow.first().first
 
             if (token == null) {
-                clearCoffees("No has iniciado sesión.")
+                clearCoffees(getString(R.string.not_logged))
                 return@launch
             }
 
@@ -182,7 +202,7 @@ class MainActivity : AppCompatActivity() {
                 viewModel.coffeeList.collect { coffeeList ->
                     if (coffeeList != null) {
                         if (coffeeList.isEmpty()) {
-                            clearCoffees("No hay cafés disponibles.")
+                            clearCoffees(getString(R.string.no_coffee))
                         } else {
                             val adapter = CoffeeAdapter(coffeeList) { selectedCoffee ->
                                 val intent = Intent(this@MainActivity, CoffeeDetailActivity::class.java)
@@ -204,20 +224,23 @@ class MainActivity : AppCompatActivity() {
                     sessionManager.clearSession()
                     vm.logout()
                     updateToolbarMenu()
-                    clearCoffees("Sesión expirada. Por favor, inicia sesión de nuevo.")
+                    clearCoffees(getString(R.string.closed_session))
                 } else {
                     clearCoffees("Error al obtener cafés: ${e.message}")
                 }
             } catch (e: Exception) {
                 clearCoffees("Error inesperado: ${e.message}")
             } finally {
-                // Por seguridad, aseguramos que se desactive el refresh si no se detuvo antes
+                // se desactiva el refresh si no se detuvo antes
                 binding.swipeRefresh.isRefreshing = false
             }
         }
     }
 
 
+    /**
+     * Clears the coffee list and displays a message.
+     */
     private fun clearCoffees(message: String) {
         binding.recyclerView.adapter = CoffeeAdapter(emptyList()) {}
         binding.tvEmpty.visibility = View.VISIBLE
@@ -225,28 +248,29 @@ class MainActivity : AppCompatActivity() {
         Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
     }
 
-
+    /**
+     * Displays a login dialog and triggers authentication.
+     */
     private fun showLoginDialog() {
         val view = layoutInflater.inflate(R.layout.dialog_login, null)
         val etUsername = view.findViewById<EditText>(R.id.etUsername)
         val etPassword = view.findViewById<EditText>(R.id.etPassword)
 
         AlertDialog.Builder(this)
-            .setTitle("Iniciar sesión")
+            .setTitle(getString(R.string.login))
             .setView(view)
-            .setPositiveButton("Login") { _, _ ->
+            .setPositiveButton(R.string.login) { _, _ ->
                 val username = etUsername.text.toString()
                 val password = etPassword.text.toString()
 
                 if (!checkConnection(this)) {
-                    Toast.makeText(this, "Sin conexión a Internet. Verifica tu red.", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, getString(R.string.no_internet), Toast.LENGTH_SHORT).show()
                     return@setPositiveButton
                 }
 
                 vm.login(username, password)
             }
-            .setNegativeButton("Cancelar", null)
+            .setNegativeButton(getString(R.string.cancel), null)
             .show()
     }
 }
-

@@ -13,4 +13,12 @@
     <string name="access_without_token">No hay cafés disponibles sin token</string>
     <string name="post_comment">Añadir comentario</string>
     <string name="comment">Comentario</string>
+    <string name="cancel">Cancelar</string>
+    <string name="no_internet">Sin conexión a Internet. Verifica tu red.</string>
+    <string name="closed_session">Sesión expirada. Por favor, inicia sesión de nuevo.</string>
+    <string name="no_coffee">No hay cafés disponibles.</string>
+    <string name="not_logged">No has iniciado sesión.</string>
+    <string name="accept">Aceptar</string>
+    <string name="comment_posted">Comentario publicado</string>
+    <string name="no_empty_comment">El comentario no puede estar vacío</string>
 </resources>
