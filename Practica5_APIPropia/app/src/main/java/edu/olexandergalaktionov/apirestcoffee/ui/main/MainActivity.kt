@@ -18,7 +18,7 @@ import edu.olexandergalaktionov.apirestcoffee.data.CoffeeRepository
 import edu.olexandergalaktionov.apirestcoffee.R
 import edu.olexandergalaktionov.apirestcoffee.databinding.ActivityMainBinding
 import edu.olexandergalaktionov.apirestcoffee.model.LoginState
-import edu.olexandergalaktionov.apirestcoffee.ui.coffeedetail.CoffeeDetail
+import edu.olexandergalaktionov.apirestcoffee.ui.coffeedetail.CoffeeDetailActivity
 import edu.olexandergalaktionov.apirestcoffee.ui.coffeedetail.CoffeeViewModel
 import edu.olexandergalaktionov.apirestcoffee.ui.coffeedetail.CoffeeViewModelFactory
 import edu.olexandergalaktionov.apirestcoffee.utils.SessionManager
@@ -185,7 +185,7 @@ class MainActivity : AppCompatActivity() {
                             clearCoffees("No hay cafés disponibles.")
                         } else {
                             val adapter = CoffeeAdapter(coffeeList) { selectedCoffee ->
-                                val intent = Intent(this@MainActivity, CoffeeDetail::class.java)
+                                val intent = Intent(this@MainActivity, CoffeeDetailActivity::class.java)
                                 intent.putExtra("coffeeId", selectedCoffee.id)
                                 startActivity(intent)
                             }

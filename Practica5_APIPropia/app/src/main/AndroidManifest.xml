@@ -16,7 +16,7 @@
         android:theme="@style/AppTheme"
         tools:targetApi="31">
         <activity
-            android:name=".ui.coffeedetail.CoffeeDetail"
+            android:name=".ui.coffeedetail.CoffeeDetailActivity"
             android:exported="false" />
         <activity
             android:name=".ui.main.MainActivity"

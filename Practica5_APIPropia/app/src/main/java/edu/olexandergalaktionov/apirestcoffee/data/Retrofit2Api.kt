@@ -15,6 +15,13 @@ import retrofit2.http.Headers
 import retrofit2.http.POST
 import retrofit2.http.Path
 
+/**
+ * Class Retrofit2Api.kt
+ *
+ * Retrofit builder to interact with the Coffee REST API.
+ *
+ * @author Olexandr Galaktionov Tsisar
+ */
 class Retrofit2Api {
     companion object {
         /**
@@ -35,20 +42,60 @@ class Retrofit2Api {
     }
 }
 
+/**
+ * Interface Retrofit2ApiInterface
+ *
+ * Retrofit interface to define endpoints of the Coffee API.
+ *
+ * @author Olexandr Galaktionov Tsisar
+ */
 interface Retrofit2ApiInterface {
+    /**
+     * Sends a POST request to login a user.
+     *
+     * @param request LoginRequest object containing user credentials.
+     * @return Response containing LoginResponse data if successful.
+     */
     @POST("login")
     @Headers("Content-Type: application/json")
     suspend fun login(@Body request: LoginRequest): Response<LoginResponse>
 
+    /**
+     * Retrieves the full list of coffees.
+     *
+     * @param token Authentication token in the "Bearer" format.
+     * @return List of CoffeeList objects.
+     */
     @GET("coffee")
     suspend fun getAll(@Header("Authorization") token: String): List<CoffeeList>
 
+    /**
+     * Retrieves the details of a specific coffee by ID.
+     *
+     * @param token Authentication token in the "Bearer" format.
+     * @param id ID of the coffee to retrieve.
+     * @return CoffeeId object containing the coffee details.
+     */
     @GET("coffee/{id}")
     suspend fun getCoffeeById(@Header("Authorization") token: String, @Path("id") id: Int): CoffeeId
 
+    /**
+     * Retrieves the list of comments for a specific coffee.
+     *
+     * @param token Authentication token in the "Bearer" format.
+     * @param idCoffee ID of the coffee to get comments for.
+     * @return List of CoffeeComments objects.
+     */
     @GET("comments/{idCoffee}")
     suspend fun getComments(@Header("Authorization") token: String, @Path("idCoffee")idCoffee: Int): List<CoffeeComments>
 
+    /**
+     * Posts a new comment for a coffee.
+     *
+     * @param token Authentication token in the "Bearer" format.
+     * @param comment CoffeeComments object to be posted.
+     * @return Response containing the posted CoffeeComments.
+     */
     @POST("comments")
     @Headers("Content-Type: application/json")
     suspend fun postComment(@Header("Authorization") token: String, @Body comment: CoffeeComments): Response<CoffeeComments>

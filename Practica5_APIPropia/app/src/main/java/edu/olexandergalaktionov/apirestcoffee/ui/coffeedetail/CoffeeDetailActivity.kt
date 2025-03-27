@@ -21,8 +21,9 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import androidx.appcompat.app.AlertDialog
 import edu.olexandergalaktionov.apirestcoffee.R
+import edu.olexandergalaktionov.apirestcoffee.utils.checkConnection
 
-class CoffeeDetail : AppCompatActivity() {
+class CoffeeDetailActivity : AppCompatActivity() {
     private lateinit var binding: ActivityCoffeeDetailBinding
     private var coffeeId = -1
     private var token: String? = null
@@ -98,6 +99,11 @@ class CoffeeDetail : AppCompatActivity() {
     }
 
     private fun postComment(user: String, comment: String) {
+        if (!checkConnection(this@CoffeeDetailActivity)) {
+            Toast.makeText(this@CoffeeDetailActivity, "Sin conexión. No se pudo publicar el comentario.", Toast.LENGTH_SHORT).show()
+            return
+        }
+
         lifecycleScope.launch {
             val sessionManager = SessionManager(dataStore)
             val token = sessionManager.sessionFlow.first().first
@@ -109,14 +115,14 @@ class CoffeeDetail : AppCompatActivity() {
                     val response = Retrofit2Api.getRetrofit2Api().postComment("Bearer $token", newComment)
                     Log.d("POST_COMMENT", "Code: ${response.code()}, Body: ${response.body()}, Error: ${response.errorBody()?.string()}")
                     if (response.isSuccessful) {
-                        Toast.makeText(this@CoffeeDetail, "Comentario publicado", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(this@CoffeeDetailActivity, "Comentario publicado", Toast.LENGTH_SHORT).show()
                         loadComments() // <-- actualiza comentarios
                         Log.d("POST_COMMENT", "Response: ${response.code()} - ${response.body()}")
                     } else {
-                        Toast.makeText(this@CoffeeDetail, "Error: ${response.code()} - ${response.message()}", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(this@CoffeeDetailActivity, "Error: ${response.code()} - ${response.message()}", Toast.LENGTH_SHORT).show()
                     }
                 } catch (e: Exception) {
-                    Toast.makeText(this@CoffeeDetail, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@CoffeeDetailActivity, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
                 }
             }
         }
@@ -143,6 +149,12 @@ class CoffeeDetail : AppCompatActivity() {
 
     private suspend fun loadComments() {
         binding.swipeRefresh.isRefreshing = true
+
+        if (!checkConnection(this)) {
+            Toast.makeText(this, "Sin conexión. No se pueden cargar comentarios nuevos.", Toast.LENGTH_LONG).show()
+            binding.swipeRefresh.isRefreshing = false
+            return
+        }
 
         try {
             val commentList: List<CoffeeComments> =
