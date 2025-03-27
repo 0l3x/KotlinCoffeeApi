@@ -143,8 +143,8 @@ class CoffeeDetailActivity : AppCompatActivity() {
         val dialog = AlertDialog.Builder(this)
             .setTitle("Nuevo comentario")
             .setView(view)
-            .setPositiveButton("Publicar", null)
-            .setNegativeButton("Cancelar", null)
+            .setPositiveButton(getString(R.string.accept), null)
+            .setNegativeButton(getString(R.string.cancel), null)
             .create()
 
         dialog.setOnShowListener {
@@ -152,7 +152,7 @@ class CoffeeDetailActivity : AppCompatActivity() {
                 val commentText = etComment.text.toString().trim()
 
                 if (commentText.isBlank()) {
-                    Toast.makeText(this, "El comentario no puede estar vacío", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, getString(R.string.no_empty_comment), Toast.LENGTH_SHORT).show()
                 } else {
                     lifecycleScope.launch {
                         if (!checkConnection(this@CoffeeDetailActivity)) {
@@ -168,7 +168,8 @@ class CoffeeDetailActivity : AppCompatActivity() {
                                 token = t,
                                 comment = comment,
                                 onSuccess = {
-                                    Toast.makeText(this@CoffeeDetailActivity, "Comentario publicado", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(this@CoffeeDetailActivity,
+                                        getString(R.string.comment_posted), Toast.LENGTH_SHORT).show()
                                 },
                                 onError = { msg ->
                                     Toast.makeText(this@CoffeeDetailActivity, msg, Toast.LENGTH_SHORT).show()
