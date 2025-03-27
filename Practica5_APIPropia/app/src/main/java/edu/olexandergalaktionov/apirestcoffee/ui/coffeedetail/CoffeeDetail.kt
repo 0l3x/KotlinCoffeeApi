@@ -1,4 +1,4 @@
-package edu.olexandergalaktionov.apirestcoffee
+package edu.olexandergalaktionov.apirestcoffee.ui.coffeedetail
 
 import android.os.Build
 import android.os.Bundle
@@ -20,6 +20,7 @@ import edu.olexandergalaktionov.apirestcoffee.utils.dataStore
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import androidx.appcompat.app.AlertDialog
+import edu.olexandergalaktionov.apirestcoffee.R
 
 class CoffeeDetail : AppCompatActivity() {
     private lateinit var binding: ActivityCoffeeDetailBinding

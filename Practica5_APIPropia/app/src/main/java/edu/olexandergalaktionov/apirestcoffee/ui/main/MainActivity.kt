@@ -1,10 +1,8 @@
-package edu.olexandergalaktionov.apirestcoffee
+package edu.olexandergalaktionov.apirestcoffee.ui.main
 
 import android.content.Intent
 import android.os.Bundle
 import android.util.Log
-import android.view.Menu
-import android.view.MenuItem
 import android.view.View
 import android.widget.EditText
 import android.widget.Toast
@@ -16,11 +14,15 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
+import edu.olexandergalaktionov.apirestcoffee.data.CoffeeRepository
+import edu.olexandergalaktionov.apirestcoffee.R
 import edu.olexandergalaktionov.apirestcoffee.databinding.ActivityMainBinding
 import edu.olexandergalaktionov.apirestcoffee.model.LoginState
+import edu.olexandergalaktionov.apirestcoffee.ui.coffeedetail.CoffeeDetail
+import edu.olexandergalaktionov.apirestcoffee.ui.coffeedetail.CoffeeViewModel
+import edu.olexandergalaktionov.apirestcoffee.ui.coffeedetail.CoffeeViewModelFactory
 import edu.olexandergalaktionov.apirestcoffee.utils.SessionManager
 import edu.olexandergalaktionov.apirestcoffee.utils.dataStore
-import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 

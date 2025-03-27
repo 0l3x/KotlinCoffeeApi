@@ -1,4 +1,4 @@
-package edu.olexandergalaktionov.apirestcoffee
+package edu.olexandergalaktionov.apirestcoffee.ui.coffeedetail
 
 import android.view.LayoutInflater
 import android.view.ViewGroup
