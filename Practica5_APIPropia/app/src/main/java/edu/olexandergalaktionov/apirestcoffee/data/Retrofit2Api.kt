@@ -13,6 +13,7 @@ import retrofit2.http.GET
 import retrofit2.http.Header
 import retrofit2.http.Headers
 import retrofit2.http.POST
+import retrofit2.http.Path
 
 class Retrofit2Api {
     companion object {
@@ -43,10 +44,10 @@ interface Retrofit2ApiInterface {
     suspend fun getAll(@Header("Authorization") token: String): List<CoffeeList>
 
     @GET("coffee/{id}")
-    suspend fun getCoffeeById(@Header("Authorization") token: String, id: Int): CoffeeId
+    suspend fun getCoffeeById(@Header("Authorization") token: String, @Path("id") id: Int): CoffeeId
 
     @GET("comments/{idCoffee}")
-    suspend fun getComments(@Header("Authorization") token: String, idCoffee: Int): List<CoffeeComments>
+    suspend fun getComments(@Header("Authorization") token: String, @Path("idCoffee")idCoffee: Int): List<CoffeeComments>
 
     @POST("comments")
     @Headers("Content-Type: application/json")

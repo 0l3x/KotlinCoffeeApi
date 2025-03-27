@@ -1,5 +1,6 @@
 package edu.olexandergalaktionov.apirestcoffee
 
+import android.content.Intent
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.enableEdgeToEdge
@@ -29,7 +30,6 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
@@ -39,26 +39,25 @@ class MainActivity : AppCompatActivity() {
             insets
         }
 
-        // 1. Login automático (esto puede ser opcional)
+        // Login automático
         vm.login("ogalaktionov", "10755610")
 
-        // 2. Observar el estado de login
+        // Observa estado de login
         lifecycleScope.launch {
             vm.loginState.collect { state ->
                 when (state) {
-                    is LoginState.Idle -> Log.i("LOGIN", "Idle")
                     is LoginState.Loading -> Log.i("LOGIN", "Loading")
                     is LoginState.Success -> {
                         Log.i("LOGIN", "Success: ${state.response.token}")
-                        // Ya estamos logueados: ahora sí podemos obtener cafés
-                        viewModel.fetchCoffees()
+                        loadCoffees()
                     }
                     is LoginState.Error -> Log.e("LOGIN", "Error: ${state.message}")
+                    else -> {}
                 }
             }
         }
 
-        // 3. Observar los datos de sesión (opcional)
+        // Observa sesión (opcional)
         lifecycleScope.launch {
             vm.getSessionFlow().collect { (token, username) ->
                 if (token != null) {
@@ -69,27 +68,33 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        // 4. Observar cafés cargados desde ViewModel
-        lifecycleScope.launchWhenStarted {
-            viewModel.coffeeList.collectLatest { coffeeList ->
-                coffeeList?.let {
-                    Log.d("MainActivity", "Cafés mostrados en UI: $it")
-                }
-            }
-        }
-
-        // Inicializa el RecyclerView
+        // Inicializa RecyclerView
         binding.recyclerView.layoutManager = LinearLayoutManager(this)
 
+        // Swipe para refrescar
+        binding.swipeRefresh.setOnRefreshListener {
+            loadCoffees()
+        }
+    }
+
+    private fun loadCoffees() {
+        binding.swipeRefresh.isRefreshing = true
+
         lifecycleScope.launchWhenStarted {
+            viewModel.fetchCoffees() // Este método es seguro, pero puedes moverlo aquí si prefieres
             viewModel.coffeeList.collectLatest { coffeeList ->
                 coffeeList?.let {
-                    val adapter = CoffeeAdapter(it)
+                    val adapter = CoffeeAdapter(it) { selectedCoffee ->
+                        val intent = Intent(this@MainActivity, CoffeeDetail::class.java)
+                        intent.putExtra("coffeeId", selectedCoffee.id)
+                        startActivity(intent)
+                    }
                     binding.recyclerView.adapter = adapter
                     Log.d("MainActivity", "Cafés mostrados en UI: $it")
                 }
+                binding.swipeRefresh.isRefreshing = false
             }
         }
-
     }
 }
+

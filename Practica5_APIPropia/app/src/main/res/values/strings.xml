@@ -3,4 +3,7 @@
     <string name="coffee_name">Nombre del café</string>
     <string name="comments">Comentarios: 0</string>
     <string name="close_session">Cerrar sesión</string>
+    <string name="coffee_description">Descripcion del cafe</string>
+    <string name="usuario">Usuario</string>
+    <string name="user_comment">Comentario del usuario</string>
 </resources>
