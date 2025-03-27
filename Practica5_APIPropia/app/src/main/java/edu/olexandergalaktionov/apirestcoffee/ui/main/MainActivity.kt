@@ -22,6 +22,7 @@ import edu.olexandergalaktionov.apirestcoffee.ui.coffeedetail.CoffeeDetail
 import edu.olexandergalaktionov.apirestcoffee.ui.coffeedetail.CoffeeViewModel
 import edu.olexandergalaktionov.apirestcoffee.ui.coffeedetail.CoffeeViewModelFactory
 import edu.olexandergalaktionov.apirestcoffee.utils.SessionManager
+import edu.olexandergalaktionov.apirestcoffee.utils.checkConnection
 import edu.olexandergalaktionov.apirestcoffee.utils.dataStore
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -158,10 +159,17 @@ class MainActivity : AppCompatActivity() {
 
     private fun loadCoffees() {
         lifecycleScope.launch {
-            val sessionManager = SessionManager(dataStore)
-            val token = sessionManager.sessionFlow.first().first
 
             binding.swipeRefresh.isRefreshing = true
+
+            // COMPROBAR CONEXIÓN
+            if (!checkConnection(this@MainActivity)) {
+                clearCoffees("Sin conexión a Internet. Verifica tu red.")
+                return@launch
+            }
+
+            val sessionManager = SessionManager(dataStore)
+            val token = sessionManager.sessionFlow.first().first
 
             if (token == null) {
                 clearCoffees("No has iniciado sesión.")
@@ -229,6 +237,12 @@ class MainActivity : AppCompatActivity() {
             .setPositiveButton("Login") { _, _ ->
                 val username = etUsername.text.toString()
                 val password = etPassword.text.toString()
+
+                if (!checkConnection(this)) {
+                    Toast.makeText(this, "Sin conexión a Internet. Verifica tu red.", Toast.LENGTH_SHORT).show()
+                    return@setPositiveButton
+                }
+
                 vm.login(username, password)
             }
             .setNegativeButton("Cancelar", null)
