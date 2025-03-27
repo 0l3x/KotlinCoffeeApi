@@ -8,7 +8,7 @@ import android.net.NetworkCapabilities
  *
  * Checks if there is an active internet connection available on the device.
  *
- * @author Olexander Galaktionov
+ * @author Olexandr Galaktionov Tsisar
  *
  * @param context The application context required to access system services.
  * @return True if the device is connected to the internet, false otherwise.
