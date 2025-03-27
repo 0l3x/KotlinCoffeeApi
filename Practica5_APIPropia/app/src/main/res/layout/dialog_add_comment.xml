@@ -7,7 +7,7 @@
 
     <EditText
         android:id="@+id/etComment"
-        android:hint="@string/comentario"
+        android:hint="@string/comment"
         android:inputType="textMultiLine"
         android:minLines="3"
         android:layout_width="match_parent"

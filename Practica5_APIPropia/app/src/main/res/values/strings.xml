@@ -3,14 +3,14 @@
     <string name="coffee_name">Nombre del café</string>
     <string name="comments">Comentarios: 0</string>
     <string name="close_session">Cerrar sesión</string>
-    <string name="coffee_description">Descripcion del cafe</string>
-    <string name="usuario">Usuario</string>
+    <string name="coffee_description">Descripción del cafe</string>
+    <string name="user">Usuario</string>
     <string name="user_comment">Comentario del usuario</string>
     <string name="login">Login</string>
     <string name="logout">Logout</string>
     <string name="username">Nombre de usuario</string>
     <string name="password">Password</string>
-    <string name="acceso_sin_token">No hay cafés disponibles sin token</string>
+    <string name="access_without_token">No hay cafés disponibles sin token</string>
     <string name="post_comment">Añadir comentario</string>
-    <string name="comentario">Comentario</string>
+    <string name="comment">Comentario</string>
 </resources>

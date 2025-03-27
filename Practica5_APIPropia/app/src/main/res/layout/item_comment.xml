@@ -19,7 +19,7 @@
             android:id="@+id/tvUser"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/usuario"
+            android:text="@string/user"
             android:textStyle="bold"
             android:textColor="@android:color/black"
             android:textSize="16sp" />

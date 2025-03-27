@@ -23,15 +23,21 @@ class CoffeeViewModel(private val repository: CoffeeRepository) : ViewModel() {
             try {
                 val coffeeData = repository.getAllCoffees()
                 _coffeeList.value = coffeeData
-
-                // Imprimir en la consola de Logcat
                 Log.d("CoffeeViewModel", "Cafés obtenidos: $coffeeData")
-
+            } catch (e: retrofit2.HttpException) {
+                if (e.code() == 401) {
+                    Log.e("CoffeeViewModel", "Token inválido. Cerrando sesión.")
+                    repository.logout() // limpia sessionManager
+                    _coffeeList.value = emptyList() // dispara el cambio en UI
+                } else {
+                    Log.e("CoffeeViewModel", "Error HTTP: ${e.code()} - ${e.message()}")
+                }
             } catch (e: Exception) {
                 Log.e("CoffeeViewModel", "Error al obtener los cafés: ${e.message}", e)
             }
         }
     }
+
 }
 
 @Suppress("UNCHECKED_CAST")

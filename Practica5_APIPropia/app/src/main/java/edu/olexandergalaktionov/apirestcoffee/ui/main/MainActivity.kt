@@ -37,6 +37,11 @@ class MainActivity : AppCompatActivity() {
         MainViewModelFactory(CoffeeRepository(SessionManager(dataStore)))
     }
 
+    override fun onStart() {
+        super.onStart()
+        loadCoffees()
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -66,7 +71,12 @@ class MainActivity : AppCompatActivity() {
                     is LoginState.Success -> {
                         Log.i("LOGIN", "Success: ${state.response.token}")
                         updateToolbarMenu()
-                        loadCoffees()
+                        lifecycleScope.launch {
+                            val token = SessionManager(dataStore).sessionFlow.first().first
+                            if (token != null) {
+                                loadCoffees()
+                            }
+                        }
                     }
                     is LoginState.Error -> {
                         Log.e("LOGIN", "Error: ${state.message}")
@@ -114,7 +124,7 @@ class MainActivity : AppCompatActivity() {
                         SessionManager(dataStore).clearSession()
                         vm.logout()
                         updateToolbarMenu()
-                        clearCoffees()
+                        clearCoffees("Sesión cerrada correctamente.")
                     }
                     true
                 }
@@ -129,7 +139,7 @@ class MainActivity : AppCompatActivity() {
                 .setMessage("""
                     Autor: Olexandr Galaktionov Tsisar
                     Grupo: 2º DAM/DAW
-                    Asignatura: PMDM
+                    Asignatura: Programación Multimedia y Dispositivos Móviles
                     Práctica: API REST Coffee
                 """.trimIndent())
                 .setPositiveButton("Aceptar", null)
@@ -151,52 +161,62 @@ class MainActivity : AppCompatActivity() {
             val sessionManager = SessionManager(dataStore)
             val token = sessionManager.sessionFlow.first().first
 
+            binding.swipeRefresh.isRefreshing = true
+
             if (token == null) {
-                clearCoffees()
+                clearCoffees("No has iniciado sesión.")
                 return@launch
             }
 
-            binding.swipeRefresh.isRefreshing = true
-
             try {
-                // Disparar fetchCoffees pero NO hacer collect aquí
                 viewModel.fetchCoffees()
 
-                // Recolectar UNA VEZ y cancelar automáticamente
-                val coffeeList = viewModel.coffeeList.first() // <-- cambia esto
-                coffeeList?.let {
-                    val adapter = CoffeeAdapter(it) { selectedCoffee ->
-                        val intent = Intent(this@MainActivity, CoffeeDetail::class.java)
-                        intent.putExtra("coffeeId", selectedCoffee.id)
-                        startActivity(intent)
+                viewModel.coffeeList.collect { coffeeList ->
+                    if (coffeeList != null) {
+                        if (coffeeList.isEmpty()) {
+                            clearCoffees("No hay cafés disponibles.")
+                        } else {
+                            val adapter = CoffeeAdapter(coffeeList) { selectedCoffee ->
+                                val intent = Intent(this@MainActivity, CoffeeDetail::class.java)
+                                intent.putExtra("coffeeId", selectedCoffee.id)
+                                startActivity(intent)
+                            }
+                            binding.recyclerView.adapter = adapter
+                            binding.tvEmpty.visibility = View.GONE
+                        }
+
+                        // Paramos el swipe refresh después de cargar los datos correctamente
+                        binding.swipeRefresh.isRefreshing = false
+                        return@collect // detenemos el collect después de la primera respuesta
                     }
-                    binding.recyclerView.adapter = adapter
-                    binding.tvEmpty.visibility = View.GONE
                 }
 
             } catch (e: retrofit2.HttpException) {
-                Log.e("MainActivity", "Error al obtener los cafés: ${e.code()} - ${e.message()}")
                 if (e.code() == 401) {
                     sessionManager.clearSession()
                     vm.logout()
                     updateToolbarMenu()
-                    clearCoffees()
-                    Toast.makeText(this@MainActivity, "Sesión expirada. Por favor, inicia sesión de nuevo.", Toast.LENGTH_LONG).show()
+                    clearCoffees("Sesión expirada. Por favor, inicia sesión de nuevo.")
+                } else {
+                    clearCoffees("Error al obtener cafés: ${e.message}")
                 }
             } catch (e: Exception) {
-                Log.e("MainActivity", "Error inesperado: ${e.message}")
-                Toast.makeText(this@MainActivity, "Error inesperado al obtener cafés", Toast.LENGTH_SHORT).show()
+                clearCoffees("Error inesperado: ${e.message}")
             } finally {
+                // Por seguridad, aseguramos que se desactive el refresh si no se detuvo antes
                 binding.swipeRefresh.isRefreshing = false
             }
         }
     }
 
-    private fun clearCoffees() {
+
+    private fun clearCoffees(message: String) {
         binding.recyclerView.adapter = CoffeeAdapter(emptyList()) {}
         binding.tvEmpty.visibility = View.VISIBLE
-        Toast.makeText(this, "Lista de cafés perdida", Toast.LENGTH_SHORT).show()
+        binding.swipeRefresh.isRefreshing = false
+        Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
     }
+
 
     private fun showLoginDialog() {
         val view = layoutInflater.inflate(R.layout.dialog_login, null)
