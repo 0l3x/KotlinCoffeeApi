@@ -28,6 +28,7 @@
             app:titleTextColor="?attr/colorOnPrimary"
             app:subtitleTextColor="?attr/colorOnPrimary"
             app:subtitleCentered="true"
+            app:navigationIcon="@drawable/ic_about"
             android:background="?attr/colorPrimary" />
     </com.google.android.material.appbar.AppBarLayout>
 

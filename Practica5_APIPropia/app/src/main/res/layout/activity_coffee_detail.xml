@@ -66,6 +66,14 @@
                     android:textSize="16sp"
                     android:paddingBottom="16dp" />
 
+                <Button
+                    android:id="@+id/btnAddComment"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/post_comment"
+                    android:layout_marginBottom="12dp"
+                    />
+
                 <androidx.recyclerview.widget.RecyclerView
                     android:id="@+id/recyclerComments"
                     android:layout_width="match_parent"

@@ -11,4 +11,6 @@
     <string name="username">Nombre de usuario</string>
     <string name="password">Password</string>
     <string name="acceso_sin_token">No hay cafés disponibles sin token</string>
+    <string name="post_comment">Añadir comentario</string>
+    <string name="comentario">Comentario</string>
 </resources>

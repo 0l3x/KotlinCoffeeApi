@@ -47,9 +47,6 @@ class MainActivity : AppCompatActivity() {
             insets
         }
 
-        // Login automático por defecto
-        vm.login("ogalaktionov", "10755610")
-
         lifecycleScope.launch {
             vm.loginState.collect { state ->
                 when (state) {
@@ -108,6 +105,20 @@ class MainActivity : AppCompatActivity() {
 
                 else -> false
             }
+        }
+
+        // Acción del icono de navegación ("Acerca de")
+        binding.mToolbar.setNavigationOnClickListener {
+            AlertDialog.Builder(this)
+                .setTitle("Acerca de")
+                .setMessage(""" 
+                            Autor: Olexander Galaktionov Tsisar
+                            Grupo: 2º DAM/DAW
+                            Asignatura: PMDM
+                            Práctica: API REST Coffee
+                            """.trimIndent())
+                .setPositiveButton("Aceptar", null)
+                .show()
         }
 
     }
